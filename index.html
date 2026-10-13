@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Actions 定时面板</title>
+  <link rel="stylesheet" href="style.css?v=20261014" />
+</head>
+<body>
+  <header>
+    <h1>⏰ Actions 定时面板</h1>
+    <p class="sub">私有仓库 · 定时运行 Python / JS 脚本 · 保存即自动重写 workflow</p>
+  </header>
+
+  <!-- 连接设置 -->
+  <section class="card" id="settings-card">
+    <div class="settings-grid">
+      <label>仓库 Owner <input id="owner" placeholder="github 用户名" /></label>
+      <label>仓库名 <input id="repo" placeholder="repo 名" /></label>
+      <label>分支 <input id="branch" placeholder="main" /></label>
+      <label class="pat">Fine-grained PAT
+        <input id="pat" type="password" placeholder="ghp_…（仅存本地浏览器）" autocomplete="off" />
+      </label>
+      <div class="settings-actions">
+        <button id="btn-connect" class="primary">连接并读取配置</button>
+        <button id="btn-settings-save">记住设置</button>
+      </div>
+    </div>
+    <p class="hint">PAT 需要「Contents」「Workflows」「Secrets」三项 Read and write，范围限定本仓库。secret 值填在页面里、保存时自动加密同步到 GitHub Secrets，页面本身不保存任何值。</p>
+  </section>
+
+  <!-- 主区域 -->
+  <nav class="tabs">
+    <button class="tab active" data-tab="tasks">📋 任务</button>
+    <button class="tab" data-tab="logs">📜 运行日志</button>
+  </nav>
+
+  <!-- 任务页 -->
+  <section id="tab-tasks" class="tab-body active">
+    <div class="toolbar">
+      <span class="tz">定时默认按北京时间填写，保存时自动转 UTC</span>
+      <button id="btn-add" class="primary">＋ 添加脚本（可多选上传）</button>
+      <input type="file" id="file-input" multiple accept=".py,.js,.sh" hidden />
+      <button id="btn-save" class="save">💾 保存全部并重写 workflow</button>
+    </div>
+    <div id="scripts"></div>
+    <div id="empty" class="empty">还没有脚本。点「添加脚本」上传 .py / .js / .sh，勾选启用并设好定时。</div>
+  </section>
+
+  <!-- 日志页 -->
+  <section id="tab-logs" class="tab-body">
+    <div class="toolbar">
+      <button id="btn-refresh-logs">🔄 刷新日志</button>
+    </div>
+    <div id="logs"></div>
+  </section>
+
+  <!-- 代码编辑弹窗 -->
+  <div id="code-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head"><span id="code-modal-title">编辑脚本</span><button id="code-close" title="关闭">×</button></div>
+      <textarea id="code-area" spellcheck="false"></textarea>
+      <div class="modal-foot">
+        <span class="modal-hint">Ctrl+S 暂存 · Esc 关闭</span>
+        <button id="code-save" class="primary">暂存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <!-- Secrets 同步：libsodium sealed box 加密（jsdelivr 不通时自动回落 unpkg） -->
+  <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl-fast.min.js"></script>
+  <script>if(!window.nacl)document.write('<script src="https://unpkg.com/tweetnacl@1.0.3/nacl-fast.min.js"><\/script>');</script>
+  <script src="https://cdn.jsdelivr.net/npm/tweetnacl-sealedbox-js@1.2.0/dist/tweetnacl-sealedbox-js.min.js"></script>
+  <script>if(!(window.nacl&&nacl.sealedbox))document.write('<script src="https://unpkg.com/tweetnacl-sealedbox-js@1.2.0/dist/tweetnacl-sealedbox-js.min.js"><\/script>');</script>
+  <script src="app.js?v=20261014"></script>
+</body>
+</html>
