@@ -125,6 +125,11 @@ async function commitFiles(message, files, attempt = 0) {
     return commit.sha;
   } catch (err) {
     if (attempt < 1 && (err.status === 409 || err.status === 422)) {
+      if (err.status === 422 && files.some(f => f.content === null)) {
+        // 删除条目指向不存在的文件（GitRPC::BadObjectState）：剔除删除条目，保住其余变更重试
+        files = files.filter(f => f.content !== null);
+        return commitFiles(message, files, attempt + 1);
+      }
       await new Promise(r => setTimeout(r, 800));
       return commitFiles(message, files, attempt + 1);
     }
@@ -438,7 +443,16 @@ async function doSave() {
     if ((s._isNew || s._dirty) && s._content !== undefined) fileMap.set(s.file, s._content);
   }
   for (const p of state.deletedPaths) {
-    if (!fileMap.has(p)) fileMap.set(p, null);
+    if (fileMap.has(p)) continue;
+    // 只删除真实存在的文件：config 里的任务可能从未上传过文件（如示例任务），
+    // 对不存在的路径发删除条目会让 git trees API 报 GitRPC::BadObjectState (422)
+    try {
+      await gh(`/repos/${state.settings.owner}/${state.settings.repo}/contents/${p}?ref=${encodeURIComponent(state.settings.branch)}`, { method: "HEAD" });
+      fileMap.set(p, null);
+    } catch (e) {
+      if (e.status !== 404) throw e;
+      console.log("跳过删除（文件本就不存在）：" + p);
+    }
   }
   const files = [...fileMap].map(([path, content]) => ({ path, content }));
   files.push({ path: CONFIG_PATH, content: configText });
